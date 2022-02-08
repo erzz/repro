@@ -1,10 +1,5 @@
 name: Go Tests
 
-# TODO
-# Docs
-# Project Tests
-# switch to main branch again
-
 on:
   workflow_call:
     inputs:
@@ -29,4 +24,4 @@ jobs:
           go-version: ${{ inputs.go-version }}
 
       - name: Install Dependencies
-        run: go get -d
+        run: go install
