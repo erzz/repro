@@ -1,0 +1,76 @@
+name: Go Tests
+
+# TODO
+# Docs
+# Project Tests
+# switch to main branch again
+
+on:
+  workflow_call:
+    inputs:
+      # <--------------- GENERAL GO OPTIONS ---------------->
+      go-version:
+        required: false
+        type: string
+        description: "Select the version of go to use. Accepts https://github.com/npm/node-semver"
+        default: "^1.17"
+      go-env-vars:
+        required: false
+        type: string
+        description: "Export your own environment variables if required (space-seperated)"
+        default: "GO111MODULE=on"
+      unit-test-dir:
+        required: false
+        type: string
+        description: "To work with a go project that resides in a sub-directory, set the path here"
+        default: "./"
+      unit-test-path:
+        required: false
+        type: string
+        description: "Set a custom path for the go test command if required (default = ./...)"
+        default: "./..."
+
+jobs:
+  unit-tests:
+    name: demo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Switch to source directory
+        run: cd ${{ inputs.unit-test-dir }}
+
+      - name: Install Dependencies
+        run: go get -u github.com/vakenbolt/go-test-report
+
+      - name: Run Unit Tests
+        run: |
+          go test -v -json -coverprofile="$GITHUB_WORKSPACE/coverage.out" ${{ inputs.unit-test-path }} | /home/runner/go/bin/go-test-report -o test-report.html -t "${{ github.event.repository.name }} / ${{ github.ref }}" -s 256
+          test_result="${PIPESTATUS[0]}"
+          if [[ $test_result -eq 0 ]]; then 
+            echo "Tests passed, check Artifacts in workflow summary page for details"
+          else 
+            echo "Tests failed, check Artifacts in workflow summary page for details"
+          fi
+          exit $test_result
+
+      - name: Create Coverage HTML Report
+        if: always()
+        run: go tool cover -html=coverage.out -o code-coverage.html
+
+      - name: Upload Unit Test Reports
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: Unit Test Reports
+          if-no-files-found: error
+          path: |
+            coverage.out
+            test-report.html
+            code-coverage.html

@@ -1,0 +1,6 @@
+name: Demo
+on: push
+
+jobs:
+  go-tests:
+    uses: ./.github/workflows/reusable-workflow.yml
